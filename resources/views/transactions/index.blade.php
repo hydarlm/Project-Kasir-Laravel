@@ -1,6 +1,42 @@
 @extends('layouts.app')
+<meta name="csrf-token" content="{{ csrf_token() }}">
 
 @section('content')
+
+@php
+    $categories = \App\Models\Category::all();
+@endphp
+
+<style>
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 50;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-content {
+        background-color: white;
+        margin: 10% auto;
+        padding: 20px;
+        border-radius: 0.5rem;
+        width: 90%;
+        max-width: 600px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    @media (min-width: 640px) {
+        .modal-content {
+            padding: 24px;
+        }
+    }
+</style>
+
 <div class="bg-white rounded-lg shadow p-4 sm:p-6">
     <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 space-y-4 sm:space-y-0">
         <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Daftar Transaksi</h1>
@@ -49,8 +85,9 @@
                 <select name="category" onchange="filterTransactions()"
                         class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                     <option value="">Semua Kategori</option>
-                    <option value="Elektronik">Elektronik</option>
-                    <option value="Aksesoris">Aksesoris</option>
+                    @foreach($categories as $category)
+                        <option value="{{ $category->name }}">{{ $category->name }}</option>
+                    @endforeach
                 </select>
             </div>
         </div>
@@ -163,128 +200,89 @@
 </div>
 
 <!-- Detail Transaction Modal -->
-<x-modal name="detail-transaction" maxWidth="lg">
-    <div class="p-4 sm:p-6" id="transaction-detail">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Detail Transaksi</h3>
-        <div id="detail-content">
-            <!-- Content will be loaded dynamically -->
-        </div>
-        <div class="flex justify-end pt-4">
-            <x-button-secondary onclick="$dispatch('close-modal', 'detail-transaction')">
-                Tutup
-            </x-button-secondary>
+<div id="detailModal" class="modal">
+    <div class="modal-content">
+        <div class="p-4 sm:p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Detail Transaksi</h3>
+            <div id="detail-content">
+                <!-- Content akan diisi secara dinamis -->
+            </div>
+            <div class="flex justify-end pt-4">
+                <button onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition duration-150">
+                    Tutup
+                </button>
+            </div>
         </div>
     </div>
-</x-modal>
+</div>
 
 <script>
-    // Mock data untuk simulasi
-    const mockTransactions = [
-        {
-            id: '001',
-            date: '2024-01-15',
-            productName: 'Laptop Asus',
-            category: 'Elektronik',
-            quantity: 1,
-            price: 'Rp 8.500.000',
-            rawPrice: 8500000,
-            total: 'Rp 8.500.000'
-        },
-        {
-            id: '002',
-            date: '2024-01-16',
-            productName: 'Mouse Logitech',
-            category: 'Elektronik',
-            quantity: 2,
-            price: 'Rp 250.000',
-            rawPrice: 250000,
-            total: 'Rp 500.000'
-        },
-        {
-            id: '003',
-            date: '2024-01-17',
-            productName: 'Keyboard Mechanical',
-            category: 'Elektronik',
-            quantity: 1,
-            price: 'Rp 750.000',
-            rawPrice: 750000,
-            total: 'Rp 750.000'
-        },
-        {
-            id: '004',
-            date: '2024-01-18',
-            productName: 'Monitor 24 inch',
-            category: 'Elektronik',
-            quantity: 1,
-            price: 'Rp 2.500.000',
-            rawPrice: 2500000,
-            total: 'Rp 2.500.000'
-        },
-        {
-            id: '005',
-            date: '2024-01-19',
-            productName: 'Headphone Sony',
-            category: 'Aksesoris',
-            quantity: 1,
-            price: 'Rp 1.200.000',
-            rawPrice: 1200000,
-            total: 'Rp 1.200.000'
-        }
-    ];
-
     let currentPage = 1;
     let itemsPerPage = 10;
-    let filteredTransactions = [...mockTransactions];
+    let totalRecords = 0;
+
+    // Format Rupiah
+    function formatRupiah(amount) {
+        return 'Rp ' + new Intl.NumberFormat('id-ID').format(amount);
+    }
 
     // Load transactions on page load
     document.addEventListener('DOMContentLoaded', function() {
         loadTransactions();
-        updateStatistics();
     });
 
     function loadTransactions() {
-        displayTransactions();
-        updatePagination();
-        updateStatistics();
+        const search = document.querySelector('input[name="search"]').value;
+        const dateFrom = document.querySelector('input[name="date_from"]').value;
+        const dateTo = document.querySelector('input[name="date_to"]').value;
+        const category = document.querySelector('select[name="category"]').value;
+
+        fetch(`{{ route('transactions.get') }}?page=${currentPage}&search=${search}&date_from=${dateFrom}&date_to=${dateTo}&category=${category}`)
+            .then(response => response.json())
+            .then(data => {
+                displayTransactions(data.transactions.data);
+                updatePagination(data.transactions.total, data.transactions.current_page, data.transactions.per_page);
+                updateStatistics(data.stats);
+            })
+            .catch(error => console.error('Error:', error));
     }
 
-    function displayTransactions() {
+    function displayTransactions(transactions) {
         const tableBody = document.getElementById('transaction-table-body');
-        const start = (currentPage - 1) * itemsPerPage;
-        const end = start + itemsPerPage;
-        const paginatedTransactions = filteredTransactions.slice(start, end);
 
-        tableBody.innerHTML = paginatedTransactions.map(transaction => `
+        tableBody.innerHTML = transactions.map(transaction => `
             <tr class="odd:bg-white even:bg-gray-50 border-b hover:bg-gray-100">
                 <td class="px-3 sm:px-6 py-3 sm:py-4">
                     <input type="checkbox" class="transaction-checkbox"
                            value="${transaction.id}" onchange="updateBulkActions()">
                 </td>
-                <td class="px-3 sm:px-6 py-3 sm:py-4 font-medium text-gray-900 text-sm">${transaction.id}</td>
-                <td class="px-3 sm:px-6 py-3 sm:py-4 text-sm whitespace-nowrap">${transaction.date}</td>
+                <td class="px-3 sm:px-6 py-3 sm:py-4 font-medium text-gray-900 text-sm">${transaction.transaction_id}</td>
+                <td class="px-3 sm:px-6 py-3 sm:py-4 text-sm whitespace-nowrap">${new Date(transaction.date).toLocaleDateString('id-ID')}</td>
                 <td class="px-3 sm:px-6 py-3 sm:py-4 text-sm">
-                    <div class="max-w-xs sm:max-w-none truncate">${transaction.productName}</div>
+                    <div class="max-w-xs sm:max-w-none truncate">${transaction.product_name}</div>
                 </td>
                 <td class="px-3 sm:px-6 py-3 sm:py-4">
                     <span class="px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap
-                           ${transaction.category === 'Elektronik' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">
-                        ${transaction.category}
+                           ${transaction.category_name === 'Elektronik' ? 'bg-blue-100 text-blue-800' :
+                             transaction.category_name === 'Aksesoris' ? 'bg-green-100 text-green-800' :
+                             'bg-purple-100 text-purple-800'}">
+                        ${transaction.category_name}
                     </span>
                 </td>
                 <td class="px-3 sm:px-6 py-3 sm:py-4 text-sm text-center">${transaction.quantity}</td>
-                <td class="px-3 sm:px-6 py-3 sm:py-4 text-sm whitespace-nowrap">${transaction.price}</td>
-                <td class="px-3 sm:px-6 py-3 sm:py-4 font-semibold text-sm whitespace-nowrap">${transaction.total}</td>
+                <td class="px-3 sm:px-6 py-3 sm:py-4 text-sm whitespace-nowrap">${formatRupiah(transaction.price)}</td>
+                <td class="px-3 sm:px-6 py-3 sm:py-4 font-semibold text-sm whitespace-nowrap">${formatRupiah(transaction.total)}</td>
                 <td class="px-3 sm:px-6 py-3 sm:py-4">
                     <div class="flex space-x-1 sm:space-x-2">
-                        <button onclick="showTransactionDetail('${transaction.id}')"
+                        <button onclick="showTransactionDetail(${transaction.id})"
                                 class="text-blue-600 hover:text-blue-900 p-1" title="Detail">
                             <i class="fas fa-eye text-sm"></i>
                         </button>
-                        <button onclick="editTransaction('${transaction.id}')"
+                        <button onclick="editTransaction(${transaction.id})"
                                 class="text-yellow-600 hover:text-yellow-900 p-1" title="Edit">
                             <i class="fas fa-edit text-sm"></i>
                         </button>
-                        <button onclick="deleteTransaction('${transaction.id}')"
+                        <button onclick="deleteTransaction(${transaction.id})"
                                 class="text-red-600 hover:text-red-900 p-1" title="Delete">
                             <i class="fas fa-trash text-sm"></i>
                         </button>
@@ -294,53 +292,99 @@
         `).join('');
     }
 
-    function updateStatistics() {
-        const totalTransactions = filteredTransactions.length;
-        const totalRevenue = filteredTransactions.reduce((sum, t) => sum + t.rawPrice * t.quantity, 0);
-        const today = new Date().toISOString().split('T')[0];
-        const todayTransactions = filteredTransactions.filter(t => t.date === today).length;
-        const totalItems = filteredTransactions.reduce((sum, t) => sum + t.quantity, 0);
+    function showTransactionDetail(id) {
+        fetch(`/transactions/${id}`)
+            .then(response => response.json())
+            .then(transaction => {
+                // Format tanggal
+                const transactionDate = new Date(transaction.date);
+                const formattedDate = transactionDate.toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                });
 
-        document.getElementById('total-transactions').textContent = totalTransactions;
-        document.getElementById('total-revenue').textContent = new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR'
-        }).format(totalRevenue);
-        document.getElementById('today-transactions').textContent = todayTransactions;
-        document.getElementById('total-items').textContent = totalItems;
+                // Isi konten modal
+                document.getElementById('detail-content').innerHTML = `
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <span class="font-medium text-gray-700">ID Transaksi:</span>
+                                <span class="ml-2">${transaction.transaction_id}</span>
+                            </div>
+                            <div>
+                                <span class="font-medium text-gray-700">Tanggal:</span>
+                                <span class="ml-2">${formattedDate}</span>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <span class="font-medium text-gray-700">Nama Barang:</span>
+                                <span class="ml-2">${transaction.product.name}</span>
+                            </div>
+                            <div>
+                                <span class="font-medium text-gray-700">Kategori:</span>
+                                <span class="ml-2">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full
+                                        ${transaction.product.category.name === 'Elektronik' ? 'bg-blue-100 text-blue-800' :
+                                          transaction.product.category.name === 'Aksesoris' ? 'bg-green-100 text-green-800' :
+                                          'bg-purple-100 text-purple-800'}">
+                                        ${transaction.product.category.name}
+                                    </span>
+                                </span>
+                            </div>
+                            <div>
+                                <span class="font-medium text-gray-700">Jumlah:</span>
+                                <span class="ml-2">${transaction.quantity}</span>
+                            </div>
+                            <div>
+                                <span class="font-medium text-gray-700">Harga Satuan:</span>
+                                <span class="ml-2">${formatRupiah(transaction.price)}</span>
+                            </div>
+                        </div>
+                        <div class="border-t pt-4">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-lg">Total Harga:</span>
+                                <span class="font-bold text-lg text-blue-600">
+                                    ${formatRupiah(transaction.quantity * transaction.price)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Buka modal
+                document.getElementById('detailModal').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Gagal memuat detail transaksi');
+            });
     }
 
-    function updatePagination() {
-        const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
-        const start = (currentPage - 1) * itemsPerPage + 1;
-        const end = Math.min(currentPage * itemsPerPage, filteredTransactions.length);
+    function closeModal() {
+        document.getElementById('detailModal').style.display = 'none';
+    }
+
+    function updateStatistics(stats) {
+        document.getElementById('total-transactions').textContent = stats.total_transactions;
+        document.getElementById('total-revenue').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(stats.total_revenue);
+        document.getElementById('today-transactions').textContent = stats.today_transactions;
+        document.getElementById('total-items').textContent = stats.total_items;
+    }
+
+    function updatePagination(total, currentPage, perPage) {
+        const totalPages = Math.ceil(total / perPage);
+        const start = (currentPage - 1) * perPage + 1;
+        const end = Math.min(currentPage * perPage, total);
 
         document.getElementById('showing-from').textContent = start;
         document.getElementById('showing-to').textContent = end;
-        document.getElementById('total-records').textContent = filteredTransactions.length;
+        document.getElementById('total-records').textContent = total;
 
         document.getElementById('prev-btn').disabled = currentPage === 1;
-        document.getElementById('next-btn').disabled = currentPage === totalPages;
+        document.getElementById('next-btn').disabled = currentPage === totalPages || total === 0;
     }
 
     function filterTransactions() {
-        const search = document.querySelector('input[name="search"]').value.toLowerCase();
-        const dateFrom = document.querySelector('input[name="date_from"]').value;
-        const dateTo = document.querySelector('input[name="date_to"]').value;
-        const category = document.querySelector('select[name="category"]').value;
-
-        filteredTransactions = mockTransactions.filter(transaction => {
-            const matchSearch = !search ||
-                transaction.id.toLowerCase().includes(search) ||
-                transaction.productName.toLowerCase().includes(search);
-
-            const matchDateFrom = !dateFrom || transaction.date >= dateFrom;
-            const matchDateTo = !dateTo || transaction.date <= dateTo;
-            const matchCategory = !category || transaction.category === category;
-
-            return matchSearch && matchDateFrom && matchDateTo && matchCategory;
-        });
-
         currentPage = 1;
         loadTransactions();
     }
@@ -378,55 +422,8 @@
     }
 
     function nextPage() {
-        const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            loadTransactions();
-        }
-    }
-
-    function showTransactionDetail(id) {
-        const transaction = mockTransactions.find(t => t.id === id);
-        if (transaction) {
-            document.getElementById('detail-content').innerHTML = `
-                <div class="space-y-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <span class="font-medium text-gray-700">ID Transaksi:</span>
-                            <span class="ml-2">${transaction.id}</span>
-                        </div>
-                        <div>
-                            <span class="font-medium text-gray-700">Tanggal:</span>
-                            <span class="ml-2">${transaction.date}</span>
-                        </div>
-                        <div class="sm:col-span-2">
-                            <span class="font-medium text-gray-700">Nama Barang:</span>
-                            <span class="ml-2">${transaction.productName}</span>
-                        </div>
-                        <div>
-                            <span class="font-medium text-gray-700">Kategori:</span>
-                            <span class="ml-2">${transaction.category}</span>
-                        </div>
-                        <div>
-                            <span class="font-medium text-gray-700">Jumlah:</span>
-                            <span class="ml-2">${transaction.quantity}</span>
-                        </div>
-                        <div class="sm:col-span-2">
-                            <span class="font-medium text-gray-700">Harga Satuan:</span>
-                            <span class="ml-2">${transaction.price}</span>
-                        </div>
-                    </div>
-                    <div class="border-t pt-4">
-                        <div class="flex justify-between items-center">
-                            <span class="font-bold text-lg">Total Harga:</span>
-                            <span class="font-bold text-lg text-blue-600">${transaction.total}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-            // Open modal (assuming you have a modal system)
-            $dispatch('open-modal', 'detail-transaction');
-        }
+        currentPage++;
+        loadTransactions();
     }
 
     function editTransaction(id) {
@@ -452,9 +449,21 @@
             `Apakah Anda yakin ingin menghapus ${selectedIds.length} transaksi?`;
 
         if (confirm(message)) {
-            alert('Transaksi berhasil dihapus');
-            // Di sini akan ada proses delete ke backend
-            loadTransactions();
+            fetch('{{ route("transactions.bulk-delete") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ids: selectedIds})
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.success);
+                loadTransactions();
+                document.getElementById('bulk-actions').style.display = 'none';
+            })
+            .catch(error => console.error('Error:', error));
         }
     }
 

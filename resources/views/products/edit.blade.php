@@ -6,15 +6,16 @@
         {{-- Header --}}
         <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
             <div>
-                <h1 class="text-2xl text-center sm:text-3xl font-bold text-gray-900 mb-2">Tambah Produk Baru</h1>
-                <p class="text-sm text-center sm:text-base text-gray-600">Masukkan informasi produk yang akan ditambahkan ke inventory</p>
+                <h1 class="text-2xl text-center sm:text-3xl font-bold text-gray-900 mb-2">Edit Produk</h1>
+                <p class="text-sm text-center sm:text-base text-gray-600">Perbarui informasi produk</p>
             </div>
         </div>
 
         {{-- Form Card --}}
         <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8">
-            <form action="{{ route('products.store') }}" method="POST" id="productForm">
+            <form action="{{ route('products.update', $product->id) }}" method="POST" id="productForm">
                 @csrf
+                @method('PUT')
 
                 <div class="space-y-6">
                     {{-- Product Name --}}
@@ -29,7 +30,7 @@
                                 placeholder="Masukkan nama produk"
                                 required
                                 class="pl-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm sm:text-base"
-                                value="{{ old('name') }}"
+                                value="{{ old('name', $product->name) }}"
                             />
                         </div>
                         @error('name')
@@ -52,7 +53,7 @@
                                 min="0"
                                 step="1000"
                                 class="pl-10 sm:pl-12 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm sm:text-base"
-                                value="{{ old('price') }}"
+                                value="{{ old('price', $product->price) }}"
                             />
                         </div>
                         @error('price')
@@ -74,7 +75,7 @@
                                 required
                                 min="0"
                                 class="pl-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm sm:text-base"
-                                value="{{ old('stock') }}"
+                                value="{{ old('stock', $product->stock) }}"
                             />
                         </div>
                         @error('stock')
@@ -97,7 +98,7 @@
                             >
                                 <option value="">Pilih Kategori</option>
                                 @foreach($categories as $id => $name)
-                                    <option value="{{ $id }}" {{ old('category_id') == $id ? 'selected' : '' }}>
+                                    <option value="{{ $id }}" {{ old('category_id', $product->category_id) == $id ? 'selected' : '' }}>
                                         {{ $name }}
                                     </option>
                                 @endforeach
@@ -120,7 +121,7 @@
                             rows="4"
                             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-vertical text-sm sm:text-base"
                             placeholder="Masukkan deskripsi produk (opsional)"
-                        >{{ old('description') }}</textarea>
+                        >{{ old('description', $product->description) }}</textarea>
                         @error('description')
                             <p class="mt-1 text-sm text-red-600 animate-pulse">{{ $message }}</p>
                         @enderror
@@ -139,11 +140,11 @@
                     <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 order-1 sm:order-2">
                         <x-button-secondary type="button" onclick="resetForm()" class="w-full sm:w-auto">
                             <i class="fas fa-times mr-2"></i>
-                            Batal
+                            Reset
                         </x-button-secondary>
                         <x-button-primary type="submit" id="submitBtn" class="w-full sm:w-auto">
                             <i class="fas fa-save mr-2"></i>
-                            Simpan Produk
+                            Simpan Perubahan
                         </x-button-primary>
                     </div>
                 </div>
@@ -165,7 +166,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Reset form function
     window.resetForm = function() {
-        if (confirm('Apakah Anda yakin ingin membatalkan? Semua data yang telah diisi akan hilang.')) {
+        if (confirm('Apakah Anda yakin ingin mengembalikan ke nilai awal?')) {
+            // Reset form to original values
             form.reset();
         }
     };

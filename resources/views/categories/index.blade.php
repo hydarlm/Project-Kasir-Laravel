@@ -10,105 +10,76 @@
         </a>
     </div>
 
+    @if(session('success'))
+        <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+            {{ session('success') }}
+        </div>
+    @endif
+
     <!-- Mobile Card View -->
     <div class="block sm:hidden space-y-4">
+        @forelse($categories as $category)
         <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
             <div class="flex justify-between items-start mb-3">
                 <div>
-                    <h3 class="font-medium text-gray-900 text-base">Elektronik</h3>
-                    <div class="mt-2">
-                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">25</span>
-                    </div>
+                    <h3 class="font-medium text-gray-900 text-base">{{ $category->name }}</h3>
+                    @if($category->description)
+                        <p class="text-gray-500 text-sm mt-1">{{ Str::limit($category->description, 50) }}</p>
+                    @endif
                 </div>
                 <div class="flex space-x-3">
-                    <button class="text-blue-600 hover:text-blue-900 p-2">
+                    <a href="{{ route('categories.edit', $category->id) }}" class="text-blue-600 hover:text-blue-900 p-2">
                         <i class="fas fa-edit text-lg"></i>
-                    </button>
-                    <button class="text-red-600 hover:text-red-900 p-2">
-                        <i class="fas fa-trash text-lg"></i>
-                    </button>
+                    </a>
+                    <form action="{{ route('categories.destroy', $category->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus kategori ini?')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="text-red-600 hover:text-red-900 p-2">
+                            <i class="fas fa-trash text-lg"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
-
-        <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-            <div class="flex justify-between items-start mb-3">
-                <div>
-                    <h3 class="font-medium text-gray-900 text-base">Fashion</h3>
-                    <div class="mt-2">
-                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">12</span>
-                    </div>
-                </div>
-                <div class="flex space-x-3">
-                    <button class="text-blue-600 hover:text-blue-900 p-2">
-                        <i class="fas fa-edit text-lg"></i>
-                    </button>
-                    <button class="text-red-600 hover:text-red-900 p-2">
-                        <i class="fas fa-trash text-lg"></i>
-                    </button>
-                </div>
-            </div>
+        @empty
+        <div class="text-center py-4 text-gray-500">
+            Tidak ada kategori tersedia
         </div>
+        @endforelse
     </div>
 
     <!-- Desktop/Tablet Table View -->
     <div class="hidden sm:block overflow-x-auto">
-        <x-data-table :headers="['Nama Kategori', 'Jumlah Produk', 'Aksi']">
-            <tr class="odd:bg-white even:bg-gray-50 border-b">
-                <td class="px-4 md:px-6 py-4 font-medium text-gray-900">Elektronik</td>
-                <td class="px-4 md:px-6 py-4">
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">25</span>
+        <x-data-table :headers="['Nama Kategori', 'Deskripsi', 'Aksi']">
+            @forelse($categories as $category)
+            <tr class="odd:bg-white even:bg-gray-50 border-b hover:bg-gray-50">
+                <td class="px-4 md:px-6 py-4 font-medium text-gray-900">{{ $category->name }}</td>
+                <td class="px-4 md:px-6 py-4 text-gray-500">
+                    {{ $category->description ? Str::limit($category->description, 50) : '-' }}
                 </td>
                 <td class="px-4 md:px-6 py-4">
                     <div class="flex space-x-2">
-                        <button class="text-blue-600 hover:text-blue-900 p-1">
+                        <a href="{{ route('categories.edit', $category->id) }}" class="text-blue-600 hover:text-blue-900 p-1">
                             <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="text-red-600 hover:text-red-900 p-1">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        </a>
+                        <form action="{{ route('categories.destroy', $category->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus kategori ini?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-red-600 hover:text-red-900 p-1">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
                     </div>
                 </td>
             </tr>
-            <tr class="odd:bg-white even:bg-gray-50 border-b">
-                <td class="px-4 md:px-6 py-4 font-medium text-gray-900">Fashion</td>
-                <td class="px-4 md:px-6 py-4">
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">12</span>
-                </td>
-                <td class="px-4 md:px-6 py-4">
-                    <div class="flex space-x-2">
-                        <button class="text-blue-600 hover:text-blue-900 p-1">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="text-red-600 hover:text-red-900 p-1">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
+            @empty
+            <tr>
+                <td colspan="3" class="px-4 md:px-6 py-4 text-center text-gray-500">
+                    Tidak ada data kategori
                 </td>
             </tr>
+            @endforelse
         </x-data-table>
     </div>
 </div>
-
-<!-- Add Category Modal -->
-<x-modal name="add-category">
-    <div class="p-4 sm:p-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Tambah Kategori Baru</h3>
-        <form class="space-y-4">
-            <div>
-                <x-form-label for="category_name" required>Nama Kategori</x-form-label>
-                <x-input-field name="category_name" placeholder="Masukkan nama kategori" required />
-            </div>
-            <div class="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
-                <x-button-secondary onclick="$dispatch('close-modal', 'add-category')" class="w-full sm:w-auto">
-                    Cancel
-                </x-button-secondary>
-                <x-button-primary type="submit" class="w-full sm:w-auto">
-                    <i class="fas fa-save mr-2"></i>
-                    Simpan
-                </x-button-primary>
-            </div>
-        </form>
-    </div>
-</x-modal>
 @endsection
