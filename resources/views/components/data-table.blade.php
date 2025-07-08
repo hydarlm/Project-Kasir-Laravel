@@ -1,6 +1,5 @@
 <div>
     <?php
-    // File: resources/views/components/data-table.blade.php
     ?>
     @props(['headers' => []])
 

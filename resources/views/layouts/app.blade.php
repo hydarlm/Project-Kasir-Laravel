@@ -186,13 +186,6 @@
                     <button class="p-2 rounded-lg transition-colors relative">
                         <i class="fas fa-bell text-amber-400 hover:text-white animate-pulse"></i>
                     </button>
-
-                    <div class="border-l border-gray-200 pl-4">
-                        <a href="/login" class="bg-teal-800 btn-primary py-2 px-6 text-white rounded-lg flex items-center space-x-2 relative overflow-hidden">
-                            <i class="fas fa-sign-in-alt"></i>
-                            <span>Login</span>
-                        </a>
-                    </div>
                 </div>
 
                 <!-- Mobile Menu Button -->
@@ -229,13 +222,6 @@
                     <i class="fas fa-receipt w-5"></i>
                     <span>Transaksi</span>
                 </a>
-
-                <div class="border-t border-gray-200 pt-4 mt-4">
-                    <a href="/login" class="bg-teal-800 btn-primary w-full py-3 px-4 text-white rounded-lg flex items-center justify-center space-x-3">
-                        <i class="fas fa-sign-in-alt"></i>
-                        <span>Login</span>
-                    </a>
-                </div>
             </div>
         </div>
     </nav>
