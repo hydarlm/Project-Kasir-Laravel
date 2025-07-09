@@ -1,6 +1,6 @@
 # Website Kasir Sederhana
 
-Ini adalah tugas akhir/project untuk memenuhi tugas UAS menggunakan Laravel. website ini lumayan sederhana, bisa dipake untuk mencatat produk, kategori, sama transaksi penjualan.
+Ini adalah tugas akhir/project untuk memenuhi tugas UAS Pemrograman Web Lanjut, menggunakan Laravel. website ini lumayan sederhana, bisa dipake untuk mencatat produk, kategori, sama transaksi penjualan.
 
 ## Fitur yang Ada
 
