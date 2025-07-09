@@ -56,14 +56,21 @@ Ini adalah tugas akhir/project untuk memenuhi tugas UAS Pemrograman Web Lanjut, 
 4. **Buka di browser**
    Tinggal buka `http://localhost:8000`
 
+5. **Isi user dan password untuk login**
+    Email: kasir@example.com
+    Password: rahasia123
+
+    atau bisa ubah di file database\seeders\UserSeeder.php
+    dan jalankan php artisan db:seed
+
 ## Database
 
 Pake SQLite aja biar simple, gak perlu install MySQL segala. Ada beberapa tabel:
 - `users` - Data user yang bisa login
 - `categories` - Kategori produk
 - `products` - Data produk
-- `transactions` - Header transaksi
-- `transaction_details` - Detail item dalam transaksi
+- `transactions` - Data transaksi
+
 
 ## Tech Stack
 

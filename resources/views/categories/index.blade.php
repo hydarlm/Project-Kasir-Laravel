@@ -28,13 +28,13 @@
                     @endif
                 </div>
                 <div class="flex space-x-3">
-                    <a href="{{ route('categories.edit', $category->id) }}" class="text-blue-600 hover:text-blue-900 p-2">
+                    <a href="{{ route('categories.edit', $category->id) }}" class="text-blue-600 hover:text-blue-900 p-2" title="Edit">
                         <i class="fas fa-edit text-lg"></i>
                     </a>
-                    <form action="{{ route('categories.destroy', $category->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus kategori ini?')">
+                    <form action="{{ route('categories.destroy', $category->id) }}" method="POST" class="delete-form">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="text-red-600 hover:text-red-900 p-2">
+                        <button type="submit" class="text-red-600 hover:text-red-900 p-2" title="Hapus">
                             <i class="fas fa-trash text-lg"></i>
                         </button>
                     </form>
@@ -59,13 +59,13 @@
                 </td>
                 <td class="px-4 md:px-6 py-4">
                     <div class="flex space-x-2">
-                        <a href="{{ route('categories.edit', $category->id) }}" class="text-blue-600 hover:text-blue-900 p-1">
+                        <a href="{{ route('categories.edit', $category->id) }}" class="text-blue-600 hover:text-blue-900 p-1" title="Edit">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <form action="{{ route('categories.destroy', $category->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus kategori ini?')">
+                        <form action="{{ route('categories.destroy', $category->id) }}" method="POST" class="delete-form">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="text-red-600 hover:text-red-900 p-1">
+                            <button type="submit" class="text-red-600 hover:text-red-900 p-1" title="Hapus">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </form>
@@ -82,4 +82,37 @@
         </x-data-table>
     </div>
 </div>
+@if(session('error'))
+    <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        {{ session('error') }}
+    </div>
+@endif
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const deleteForms = document.querySelectorAll('.delete-form');
+
+        deleteForms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                Swal.fire({
+                    title: 'Apakah Anda yakin?',
+                    text: "Kategori yang dihapus tidak dapat dikembalikan!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+    });
+</script>
+@endpush
 @endsection

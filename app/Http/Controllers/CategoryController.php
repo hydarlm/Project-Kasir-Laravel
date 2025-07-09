@@ -49,10 +49,20 @@ class CategoryController extends Controller
             ->with('success', 'Kategori berhasil diperbarui');
     }
 
-    public function destroy(Category $category)
-    {
+public function destroy(Category $category)
+{
+    try {
+        // Cek apakah kategori memiliki produk terkait
+        if ($category->products()->exists()) {
+            throw new \Exception('Kategori tidak dapat dihapus karena masih terkait dengan produk.');
+        }
+
         $category->delete();
         return redirect()->route('categories.index')
             ->with('success', 'Kategori berhasil dihapus');
+    } catch (\Exception $e) {
+        return redirect()->route('categories.index')
+            ->with('error', $e->getMessage());
     }
+}
 }
